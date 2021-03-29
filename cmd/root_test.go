@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -141,6 +142,21 @@ type fatalLogger interface {
 	Fatal(...interface{})
 }
 
+// userConfigDir gets current user config dir.
+// It helps for different CIs systems and distros.
+func userConfigDir() string {
+	configPath := os.Getenv("XDG_CONFIG_HOME")
+	if configPath == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			log.Fatal(err)
+		}
+		configPath = path.Join(home, ".config")
+	}
+
+	return configPath
+}
+
 // copyTestRepo creates a copy of the testdata directory (contains a Git repo) in
 // the project root with a random dir name. It returns the absolute path of the
 // new testdata dir.
@@ -179,13 +195,13 @@ func getAppOutput(output []byte) []string {
 }
 
 func setConfigValues(repo string, configVal string, gitVal string) error {
-	err := os.Rename(repo+"/lab.toml", "/home/root/.config/lab/lab.toml")
+	err := os.Rename(repo+"/lab.toml", userConfigDir()+"/lab/lab.toml")
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	configfile, err := os.OpenFile("/home/root/.config/lab/lab.toml", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	configfile, err := os.OpenFile(userConfigDir()+"/lab/lab.toml", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -235,7 +251,7 @@ func Test_config_gitConfig_FF(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/root/.config/lab/lab.toml")
+	os.Remove(userConfigDir() + "/lab/lab.toml")
 	// both configs set to false, comments should not be output
 	require.NotContains(t, string(b), `commented at`)
 }
@@ -261,7 +277,7 @@ func Test_config_gitConfig_FT(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/root/.config/lab/lab.toml")
+	os.Remove(userConfigDir() + "/lab/lab.toml")
 	// .config set to false and .git set to true, comments should be
 	// output
 	require.Contains(t, string(b), `commented at`)
@@ -288,7 +304,7 @@ func Test_config_gitConfig_TF(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/root/.config/lab/lab.toml")
+	os.Remove(userConfigDir() + "/lab/lab.toml")
 	// .config set to true and .git set to false, comments should not be
 	// output
 	require.NotContains(t, string(b), `commented at`)
@@ -315,7 +331,7 @@ func Test_config_gitConfig_TT(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/root/.config/lab/lab.toml")
+	os.Remove(userConfigDir() + "/lab/lab.toml")
 	// both configs set to true, comments should be output
 	require.Contains(t, string(b), `commented at`)
 }
@@ -351,7 +367,7 @@ func Test_flag_config_TT(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/root/.config/lab/lab.toml")
+	os.Remove(userConfigDir() + "/lab/lab.toml")
 	// both configs set to true, comments should be output
 	require.Contains(t, string(b), `commented at`)
 }
@@ -378,7 +394,7 @@ func Test_flag_config_TF(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/root/.config/lab/lab.toml")
+	os.Remove(userConfigDir() + "/lab/lab.toml")
 	// both configs set to true, comments should be output
 	require.Contains(t, string(b), `commented at`)
 }
@@ -405,7 +421,7 @@ func Test_flag_config_FT(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/root/.config/lab/lab.toml")
+	os.Remove(userConfigDir() + "/lab/lab.toml")
 	// configs overridden on the command line, comments should not be output
 	require.NotContains(t, string(b), `commented at`)
 }

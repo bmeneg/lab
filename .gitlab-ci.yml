@@ -66,6 +66,10 @@ code_navigation:
   script:
     - go version
     - export PATH=$GOPATH/bin:$PATH
+    - echo "test pwd!!!"
+    - pwd
+    - whoami
+    - eval echo ~$(whoami)
     - make test
 
 test:
