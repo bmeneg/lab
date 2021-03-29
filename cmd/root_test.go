@@ -179,13 +179,13 @@ func getAppOutput(output []byte) []string {
 }
 
 func setConfigValues(repo string, configVal string, gitVal string) error {
-	err := os.Rename(repo+"/lab.toml", "/home/travis/.config/lab/lab.toml")
+	err := os.Rename(repo+"/lab.toml", "/home/root/.config/lab/lab.toml")
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	configfile, err := os.OpenFile("/home/travis/.config/lab/lab.toml", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	configfile, err := os.OpenFile("/home/root/.config/lab/lab.toml", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -235,7 +235,7 @@ func Test_config_gitConfig_FF(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/travis/.config/lab/lab.toml")
+	os.Remove("/home/root/.config/lab/lab.toml")
 	// both configs set to false, comments should not be output
 	require.NotContains(t, string(b), `commented at`)
 }
@@ -261,7 +261,7 @@ func Test_config_gitConfig_FT(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/travis/.config/lab/lab.toml")
+	os.Remove("/home/root/.config/lab/lab.toml")
 	// .config set to false and .git set to true, comments should be
 	// output
 	require.Contains(t, string(b), `commented at`)
@@ -288,7 +288,7 @@ func Test_config_gitConfig_TF(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/travis/.config/lab/lab.toml")
+	os.Remove("/home/root/.config/lab/lab.toml")
 	// .config set to true and .git set to false, comments should not be
 	// output
 	require.NotContains(t, string(b), `commented at`)
@@ -315,7 +315,7 @@ func Test_config_gitConfig_TT(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/travis/.config/lab/lab.toml")
+	os.Remove("/home/root/.config/lab/lab.toml")
 	// both configs set to true, comments should be output
 	require.Contains(t, string(b), `commented at`)
 }
@@ -351,7 +351,7 @@ func Test_flag_config_TT(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/travis/.config/lab/lab.toml")
+	os.Remove("/home/root/.config/lab/lab.toml")
 	// both configs set to true, comments should be output
 	require.Contains(t, string(b), `commented at`)
 }
@@ -378,7 +378,7 @@ func Test_flag_config_TF(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/travis/.config/lab/lab.toml")
+	os.Remove("/home/root/.config/lab/lab.toml")
 	// both configs set to true, comments should be output
 	require.Contains(t, string(b), `commented at`)
 }
@@ -405,7 +405,7 @@ func Test_flag_config_FT(t *testing.T) {
 	out := string(b)
 	out = stripansi.Strip(out)
 
-	os.Remove("/home/travis/.config/lab/lab.toml")
+	os.Remove("/home/root/.config/lab/lab.toml")
 	// configs overridden on the command line, comments should not be output
 	require.NotContains(t, string(b), `commented at`)
 }
