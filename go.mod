@@ -8,14 +8,10 @@ require (
 	github.com/araddon/dateparse v0.0.0-20201001162425-8aadafed4dc4
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/charmbracelet/glamour v0.3.0
-	github.com/chris-ramon/douceur v0.2.0 // indirect
-	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/fatih/color v1.10.0
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gdamore/tcell/v2 v2.0.1-0.20201017141208-acf90d56d591
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/goterm v0.0.0-20190703233501-fc88cf888a3f // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
@@ -32,9 +28,7 @@ require (
 	github.com/rsteube/carapace v0.6.3
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/afero v1.6.0
-	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/cobra v1.2.1
-	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.8.1
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
@@ -48,9 +42,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914 // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/ini.v1 v1.62.0 // indirect
 )
 
 go 1.13
