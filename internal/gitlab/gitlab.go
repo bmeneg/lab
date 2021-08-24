@@ -1452,6 +1452,15 @@ func CICreate(pid interface{}, opts *gitlab.CreatePipelineOptions) (*gitlab.Pipe
 	return p, nil
 }
 
+// CIMRCreate creates a merge request pipeline for given ref
+func CIMRCreate(project string, mrNum int) (*gitlab.PipelineInfo, error) {
+	p, _, err := lab.MergeRequests.CreateMergeRequestPipeline(project, mrNum, nil)
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
 // CITrigger triggers a pipeline for given ref
 func CITrigger(pid interface{}, opts gitlab.RunPipelineTriggerOptions) (*gitlab.Pipeline, error) {
 	p, _, err := lab.PipelineTriggers.RunPipelineTrigger(pid, &opts)

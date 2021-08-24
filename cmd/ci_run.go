@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 	gitlab "github.com/xanzy/go-gitlab"
 	"github.com/zaquestion/lab/internal/action"
-	"github.com/zaquestion/lab/internal/git"
 	lab "github.com/zaquestion/lab/internal/gitlab"
 )
 
@@ -33,19 +32,54 @@ var ciCreateCmd = &cobra.Command{
 		lab ci create -p engineering/integration_tests master`),
 	PersistentPreRun: labPersistentPreRun,
 	Run: func(cmd *cobra.Command, args []string) {
-		pid, branch, err := getCIRunOptions(cmd, args)
+		forMR, err := cmd.Flags().GetBool("merge-request")
 		if err != nil {
 			log.Fatal(err)
 		}
-		pipeline, err := lab.CICreate(pid, &gitlab.CreatePipelineOptions{Ref: &branch})
+
+		project, err := cmd.Flags().GetString("project")
 		if err != nil {
 			log.Fatal(err)
 		}
-		project, err := lab.GetProject(pid)
-		if err != nil {
-			log.Fatal(err)
+
+		if forMR {
+			if project != "" {
+				log.Fatal("option --merge-request cannot be combined with --project/-p")
+			}
+
+			rn, mrNum, err := parseArgsWithGitBranchMR(args)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			pipeline, err := lab.CIMRCreate(rn, int(mrNum))
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("%s\n", pipeline.WebURL)
+		} else {
+			var pid interface{}
+
+			rn, branch, err := parseArgsRemoteAndBranch(args)
+			if err != nil {
+				log.Fatal(err)
+			}
+			pid = rn
+
+			if project != "" {
+				p, err := lab.FindProject(project)
+				if err != nil {
+					log.Fatal(err)
+				}
+				pid = p.ID
+			}
+
+			pipeline, err := lab.CICreate(pid, &gitlab.CreatePipelineOptions{Ref: &branch})
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("%s\n", pipeline.WebURL)
 		}
-		fmt.Printf("%s/pipelines/%d\n", project.WebURL, pipeline.ID)
 	},
 }
 
@@ -65,11 +99,28 @@ var ciTriggerCmd = &cobra.Command{
 		lab ci trigger -p engineering/integration_tests -v foo=bar master`),
 	PersistentPreRun: labPersistentPreRun,
 	Run: func(cmd *cobra.Command, args []string) {
-		pid, branch, err := getCIRunOptions(cmd, args)
+		var pid interface{}
+
+		project, err := cmd.Flags().GetString("project")
 		if err != nil {
 			log.Fatal(err)
 		}
-		token, err := cmd.Flags().GetString("project")
+
+		rn, branch, err := parseArgsRemoteAndBranch(args)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pid = rn
+
+		if project != "" {
+			p, err := lab.FindProject(project)
+			if err != nil {
+				log.Fatal(err)
+			}
+			pid = p.ID
+		}
+
+		token, err := cmd.Flags().GetString("token")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -89,43 +140,9 @@ var ciTriggerCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		project, err := lab.GetProject(pid)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("%s/pipelines/%d\n", project.WebURL, pipeline.ID)
+
+		fmt.Printf("%s\n", pipeline.WebURL)
 	},
-}
-
-func getCIRunOptions(cmd *cobra.Command, args []string) (interface{}, string, error) {
-	branch, err := git.CurrentBranch()
-	if err != nil {
-		return nil, "", err
-	}
-	var pid interface{}
-	if len(args) > 0 {
-		branch = args[0]
-	}
-
-	remote := determineSourceRemote(branch)
-	rn, err := git.PathWithNamespace(remote)
-	if err != nil {
-		return nil, "", err
-	}
-	pid = rn
-
-	project, err := cmd.Flags().GetString("project")
-	if err != nil {
-		return nil, "", err
-	}
-	if project != "" {
-		p, err := lab.FindProject(project)
-		if err != nil {
-			return nil, "", err
-		}
-		pid = p.ID
-	}
-	return pid, branch, nil
 }
 
 func parseCIVariables(vars []string) (map[string]string, error) {
@@ -143,6 +160,7 @@ func parseCIVariables(vars []string) (map[string]string, error) {
 
 func init() {
 	ciCreateCmd.Flags().StringP("project", "p", "", "project to create pipeline on")
+	ciCreateCmd.Flags().Bool("merge-request", false, "use merge request pipeline if enabled")
 	ciCmd.AddCommand(ciCreateCmd)
 	carapace.Gen(ciCreateCmd).PositionalCompletion(
 		action.Remotes(),
