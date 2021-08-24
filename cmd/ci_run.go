@@ -24,13 +24,9 @@ var ciCreateCmd = &cobra.Command{
 		Run the CI pipeline for the given or current branch if none provided.
 		This API uses your GitLab token to create CI pipelines
 
-		Project will be inferred from branch if not provided
-
-		Note: "lab ci create" differs from "lab ci trigger" which is a
-		different API`),
+		Note: "lab ci create" differs from "lab ci trigger" which is a different API`),
 	Example: heredoc.Doc(`
-		lab ci create feature_branch
-		lab ci create -p engineering/integration_tests master`),
+		lab ci create feature_branch`),
 	PersistentPreRun: labPersistentPreRun,
 	Run: func(cmd *cobra.Command, args []string) {
 		pid, branch, err := getCIRunOptions(cmd, args)
@@ -56,13 +52,9 @@ var ciTriggerCmd = &cobra.Command{
 		Runs a trigger for a CI pipeline on the given or current branch if none provided.
 		This API supports variables and must be called with a trigger token or from within GitLab CI.
 
-		Project will be inferred from branch if not provided
-
 		Note: "lab ci trigger" differs from "lab ci create" which is a different API`),
 	Example: heredoc.Doc(`
-		lab ci trigger feature_branch
-		lab ci trigger -p engineering/integration_tests master
-		lab ci trigger -p engineering/integration_tests -v foo=bar master`),
+		lab ci trigger -v foo=bar feature_branch`),
 	PersistentPreRun: labPersistentPreRun,
 	Run: func(cmd *cobra.Command, args []string) {
 		pid, branch, err := getCIRunOptions(cmd, args)
@@ -143,12 +135,14 @@ func parseCIVariables(vars []string) (map[string]string, error) {
 
 func init() {
 	ciCreateCmd.Flags().StringP("project", "p", "", "project to create pipeline on")
+	ciCreateCmd.Flags().MarkDeprecated("project", "project is inferred from branch only")
 	ciCmd.AddCommand(ciCreateCmd)
 	carapace.Gen(ciCreateCmd).PositionalCompletion(
 		action.Remotes(),
 	)
 
 	ciTriggerCmd.Flags().StringP("project", "p", "", "project to run pipeline trigger on")
+	ciTriggerCmd.Flags().MarkDeprecated("project", "project is inferred from branch only")
 	ciTriggerCmd.Flags().StringP("token", "t", os.Getenv("CI_JOB_TOKEN"), "pipeline trigger token, optional if run within GitLabCI")
 	ciTriggerCmd.Flags().StringSliceP("variable", "v", []string{}, "variables to pass to pipeline")
 
