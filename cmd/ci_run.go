@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 	gitlab "github.com/xanzy/go-gitlab"
 	"github.com/zaquestion/lab/internal/action"
-	"github.com/zaquestion/lab/internal/git"
 	lab "github.com/zaquestion/lab/internal/gitlab"
 )
 
@@ -29,19 +28,32 @@ var ciCreateCmd = &cobra.Command{
 		lab ci create feature_branch`),
 	PersistentPreRun: labPersistentPreRun,
 	Run: func(cmd *cobra.Command, args []string) {
-		pid, branch, err := getCIRunOptions(cmd, args)
+		var pid interface{}
+
+		rn, branch, err := parseArgsRemoteAndBranch(args)
 		if err != nil {
 			log.Fatal(err)
 		}
+		pid = rn
+
+		project, err := cmd.Flags().GetString("project")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if project != "" {
+			p, err := lab.FindProject(project)
+			if err != nil {
+				log.Fatal(err)
+			}
+			pid = p.ID
+		}
+
 		pipeline, err := lab.CICreate(pid, &gitlab.CreatePipelineOptions{Ref: &branch})
 		if err != nil {
 			log.Fatal(err)
 		}
-		project, err := lab.GetProject(pid)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("%s/pipelines/%d\n", project.WebURL, pipeline.ID)
+
+		fmt.Printf("%s\n", pipeline.WebURL)
 	},
 }
 
@@ -57,10 +69,26 @@ var ciTriggerCmd = &cobra.Command{
 		lab ci trigger -v foo=bar feature_branch`),
 	PersistentPreRun: labPersistentPreRun,
 	Run: func(cmd *cobra.Command, args []string) {
-		pid, branch, err := getCIRunOptions(cmd, args)
+		var pid interface{}
+
+		rn, branch, err := parseArgsRemoteAndBranch(args)
 		if err != nil {
 			log.Fatal(err)
 		}
+		pid = rn
+
+		project, err := cmd.Flags().GetString("project")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if project != "" {
+			p, err := lab.FindProject(project)
+			if err != nil {
+				log.Fatal(err)
+			}
+			pid = p.ID
+		}
+
 		token, err := cmd.Flags().GetString("token")
 		if err != nil {
 			log.Fatal(err)
@@ -73,6 +101,7 @@ var ciTriggerCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		pipeline, err := lab.CITrigger(pid, gitlab.RunPipelineTriggerOptions{
 			Ref:       &branch,
 			Token:     &token,
@@ -81,43 +110,9 @@ var ciTriggerCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		project, err := lab.GetProject(pid)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("%s/pipelines/%d\n", project.WebURL, pipeline.ID)
+
+		fmt.Printf("%s\n", pipeline.WebURL)
 	},
-}
-
-func getCIRunOptions(cmd *cobra.Command, args []string) (interface{}, string, error) {
-	branch, err := git.CurrentBranch()
-	if err != nil {
-		return nil, "", err
-	}
-	var pid interface{}
-	if len(args) > 0 {
-		branch = args[0]
-	}
-
-	remote := determineSourceRemote(branch)
-	rn, err := git.PathWithNamespace(remote)
-	if err != nil {
-		return nil, "", err
-	}
-	pid = rn
-
-	project, err := cmd.Flags().GetString("project")
-	if err != nil {
-		return nil, "", err
-	}
-	if project != "" {
-		p, err := lab.FindProject(project)
-		if err != nil {
-			return nil, "", err
-		}
-		pid = p.ID
-	}
-	return pid, branch, nil
 }
 
 func parseCIVariables(vars []string) (map[string]string, error) {
