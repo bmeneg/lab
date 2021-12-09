@@ -94,16 +94,15 @@ func noteRunFn(cmd *cobra.Command, args []string) {
 	createNote(rn, isMR, int(idNum), msgs, filename, linebreak, commit, true)
 }
 
-func createCommitNote(rn string, mrID int, sha string, newFile string, oldFile string, oldline int, newline int, comment string, block bool) {
-	linetype := "old"
+func createCommitNote(rn string, mrID int, sha string, newFile string, oldFile string, lineType string, oldline int, newline int, comment string, block bool) {
 	line := oldline
+	fmt.Println(oldline, newline, comment)
 	if oldline == -1 {
-		linetype = "new"
 		line = newline
 	}
 
 	if block {
-		webURL, err := lab.CreateMergeRequestCommitDiscussion(rn, mrID, sha, newFile, oldFile, line, linetype, comment)
+		webURL, err := lab.CreateMergeRequestCommitDiscussion(rn, mrID, sha, newFile, oldFile, line, lineType, comment)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -111,7 +110,7 @@ func createCommitNote(rn string, mrID int, sha string, newFile string, oldFile s
 		return
 	}
 
-	webURL, err := lab.CreateCommitComment(rn, sha, newFile, oldFile, line, linetype, comment)
+	webURL, err := lab.CreateCommitComment(rn, sha, newFile, oldFile, line, lineType, comment)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,15 +148,17 @@ func createCommitComments(project string, mrID int, commit string, body string, 
 	oldfile := ""
 	oldLineNum := -1
 	newLineNum := -1
+	lineType := ""
 	comments := ""
 	for scanner.Scan() {
 		if strings.HasPrefix(scanner.Text(), "| newfile:") {
 			if comments != "" {
-				createCommitNote(project, mrID, commit, newfile, oldfile, oldLineNum, newLineNum, comments, block)
+				createCommitNote(project, mrID, commit, newfile, oldfile, lineType, oldLineNum, newLineNum, comments, block)
 				comments = ""
 			}
 			// read filename
 			f := strings.Split(scanner.Text(), " ")
+			fmt.Println(f)
 			newfile = f[2]
 			if len(f) < 5 {
 				oldfile = ""
@@ -166,42 +167,47 @@ func createCommitComments(project string, mrID int, commit string, body string, 
 			}
 		} else if strings.HasPrefix(scanner.Text(), "|") {
 			if comments != "" {
-				createCommitNote(project, mrID, commit, newfile, oldfile, oldLineNum, newLineNum, comments, block)
+				createCommitNote(project, mrID, commit, newfile, oldfile, lineType, oldLineNum, newLineNum, comments, block)
 				comments = ""
 			}
 			// read line numbers
-			fs := strings.Split(scanner.Text(), " ")
+			fs := strings.Fields(scanner.Text())
+			fmt.Println(fs)
+			if len(fs) < 3 {
+				continue
+			}
 
-			oldLineNum = -1
-			newLineNum = -1
-			for _, f := range fs {
-				if f == "" || f == "|" || f == "@@" {
-					continue
+			var err error
+			lineType = "context"
+
+			oldLineNum, err = strconv.Atoi(fs[1])
+			if err != nil {
+				continue
+			}
+			newLineNum, err = strconv.Atoi(fs[2])
+			if err != nil {
+				// NaN
+				if strings.HasPrefix(fs[2], "-") {
+					lineType = "old"
+				} else if strings.HasPrefix(fs[2], "+") {
+					newLineNum = oldLineNum
+					oldLineNum = -1
+					lineType = "new"
 				}
-				val, err := strconv.Atoi(f)
-				if err != nil {
-					// NaN
-					if strings.HasPrefix(f, "+") {
-						newLineNum = oldLineNum
-						oldLineNum = -1
-					}
-					break
-				} else {
-					// Number
-					if oldLineNum == -1 {
-						oldLineNum = val
-					} else {
-						newLineNum = val
-						break
-					}
-				}
+				continue
+			}
+
+			if strings.HasPrefix(fs[3], "-") {
+				lineType = "old"
+			}
+			if strings.HasPrefix(fs[3], "+") {
+				lineType = "new"
 			}
 		} else {
 			// this is a comment (combine for a filename)
 			comments = comments + "\n" + scanner.Text()
 		}
 	}
-
 }
 
 func noteGetState(rn string, isMR bool, idNum int) (state string) {

@@ -1718,10 +1718,11 @@ func CreateCommitComment(projID string, sha string, newFile string, oldFile stri
 		PositionType: "text",
 	}
 
-	if linetype == "old" {
+	if linetype == "new" || linetype == "context" {
 		position.OldPath = oldFile
 		position.OldLine = line
-	} else {
+	}
+	if linetype == "old" || linetype == "context" {
 		position.NewPath = newFile
 		position.NewLine = line
 	}
@@ -1760,9 +1761,10 @@ func CreateMergeRequestCommitDiscussion(projID string, id int, sha string, newFi
 		PositionType: "text",
 	}
 
-	if linetype == "new" {
+	if linetype == "new" || linetype == "context" {
 		position.NewLine = line
-	} else {
+	}
+	if linetype == "old" || linetype == "context" {
 		position.OldLine = line
 	}
 
