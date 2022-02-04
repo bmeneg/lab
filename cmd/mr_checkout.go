@@ -65,11 +65,10 @@ var checkoutCmd = &cobra.Command{
 		if mrCheckoutCfg.branch == "" {
 			mrCheckoutCfg.branch = mr.SourceBranch
 		}
-		// By default, fetch to configured branch
-		fetchToRef := mrCheckoutCfg.branch
 
 		// If track, make sure we have a remote for the mr author and then set
 		// the fetchToRef to the mr author/sourceBranch
+		trackRef := ""
 		if mrCheckoutCfg.track {
 			// Check if remote already exists
 			project, err := lab.GetProject(mr.SourceProjectID)
@@ -106,37 +105,40 @@ var checkoutCmd = &cobra.Command{
 				}
 			}
 
-			fetchToRef = fmt.Sprintf("refs/remotes/%s/%s", remoteName, mr.SourceBranch)
+			trackRef = fmt.Sprintf("%s/%s", remoteName, mr.SourceBranch)
 		}
 
-		if err := git.New("show-ref", "--verify", "--quiet", "refs/heads/"+fetchToRef).Run(); err == nil {
+		fmt.Println("branch name:", mrCheckoutCfg.branch)
+		err = git.New("show-ref", "--verify", "--quiet", "refs/heads/"+mrCheckoutCfg.branch).Run()
+		if err == nil {
+			fmt.Println("entrou")
 			if mrCheckoutCfg.force {
 				if err := git.New("branch", "-D", mrCheckoutCfg.branch).Run(); err != nil {
 					log.Fatal(err)
 				}
 			} else {
-				fmt.Println("ERROR: mr", mrID, "branch", fetchToRef, "already exists.")
+				fmt.Println("ERROR: mr", mrID, "branch", mrCheckoutCfg.branch, "already exists.")
 				os.Exit(1)
 			}
 		}
+		fmt.Println("passou")
 
 		// https://docs.gitlab.com/ce/user/project/merge_requests/#checkout-merge-requests-locally
 		mrRef := fmt.Sprintf("refs/merge-requests/%d/head", mrID)
-		fetchRefSpec := fmt.Sprintf("%s:%s", mrRef, fetchToRef)
+		fetchRefSpec := fmt.Sprintf("%s:%s", mrRef, mrCheckoutCfg.branch)
 		if err := git.New("fetch", targetRemote, fetchRefSpec).Run(); err != nil {
 			log.Fatal(err)
-		}
-		if mrCheckoutCfg.track {
-			// Create configured branch with tracking from fetchToRef
-			// git branch --flags <branchname> [<start-point>]
-			if err := git.New("branch", "--track", mrCheckoutCfg.branch, fetchToRef).Run(); err != nil {
-				log.Fatal(err)
-			}
 		}
 
 		// Check out branch
 		if err := git.New("checkout", mrCheckoutCfg.branch).Run(); err != nil {
 			log.Fatal(err)
+		}
+
+		if mrCheckoutCfg.track {
+			if err := git.New("branch", "-u", trackRef).Run(); err != nil {
+				log.Fatal(err)
+			}
 		}
 	},
 }

@@ -91,7 +91,8 @@ func Test_mrCheckoutCmd_track(t *testing.T) {
 	remotes := string(out)
 	require.Contains(t, remotes, "origin	git@gitlab.com:zaquestion/test.git")
 
-	cmd = exec.Command(labBinaryPath, "mr", "checkout", "1", "-t", "-b", "mrtest_track2", "-r", "mrtest_remote")
+	cmd = exec.Command(labBinaryPath, "mr", "checkout", "1", "-t", "-b",
+		"mrtest_track1", "-r", "mrtest_remote")
 	cmd.Dir = repo
 	out, err = cmd.CombinedOutput()
 	if err != nil {
