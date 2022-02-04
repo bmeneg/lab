@@ -48,46 +48,66 @@ func Test_mrCheckoutCmd_track(t *testing.T) {
 	repo := copyTestRepo(t)
 
 	// make sure the branch does not exist
-	cmd := exec.Command("git", "branch", "-D", "mrtest")
+	cmd := exec.Command("git", "branch", "-D", "mrtest_track")
+	cmd.Dir = repo
+	cmd.CombinedOutput()
+	cmd = exec.Command("git", "branch", "-D", "mrtest_track1")
 	cmd.Dir = repo
 	cmd.CombinedOutput()
 
 	cmd = exec.Command(labBinaryPath, "mr", "checkout", "1", "-t", "-b", "mrtest_track")
 	cmd.Dir = repo
-	b, err := cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Log(string(b))
+		t.Log(string(out))
 		t.Fatal(err)
 	}
-	t.Log(string(b))
+	t.Log(string(out))
 
 	cmd = exec.Command("git", "branch")
 	cmd.Dir = repo
-
-	branch, err := cmd.CombinedOutput()
+	out, err = cmd.CombinedOutput()
 	if err != nil {
 		t.Fatal(err)
 	}
-	require.Contains(t, string(branch), "mrtest")
+	require.Contains(t, string(out), "mrtest_track")
 
 	cmd = exec.Command("git", "log", "-n1")
 	cmd.Dir = repo
-	log, err := cmd.CombinedOutput()
+	out, err = cmd.CombinedOutput()
 	if err != nil {
 		t.Fatal(err)
 	}
-	eLog := string(log)
+	eLog := string(out)
 	require.Contains(t, eLog, "Test file for MR test")
 	require.Contains(t, eLog, "54fd49a2ac60aeeef5ddc75efecd49f85f7ba9b0")
 
 	cmd = exec.Command("git", "remote", "-v")
 	cmd.Dir = repo
-	gitOut, err := cmd.CombinedOutput()
+	out, err = cmd.CombinedOutput()
 	if err != nil {
 		t.Fatal(err)
 	}
-	remotes := string(gitOut)
+	remotes := string(out)
 	require.Contains(t, remotes, "origin	git@gitlab.com:zaquestion/test.git")
+
+	cmd = exec.Command(labBinaryPath, "mr", "checkout", "1", "-t", "-b", "mrtest_track2", "-r", "mrtest_remote")
+	cmd.Dir = repo
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		t.Log(string(out))
+		t.Fatal(err)
+	}
+	t.Log(string(out))
+
+	cmd = exec.Command("git", "remote", "-v")
+	cmd.Dir = repo
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		t.Fatal(err)
+	}
+	remotes = string(out)
+	require.Contains(t, remotes, "mrtest_remote	git@gitlab.com:zaquestion/test.git")
 }
 
 func Test_mrCheckoutCmdRunWithDifferentName(t *testing.T) {

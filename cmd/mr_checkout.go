@@ -16,6 +16,7 @@ import (
 // mrCheckoutConfig holds configuration values for calls to lab mr checkout
 type mrCheckoutConfig struct {
 	branch string
+	remote string
 	force  bool
 	track  bool
 }
@@ -32,6 +33,7 @@ var checkoutCmd = &cobra.Command{
 	Example: heredoc.Doc(`
 		lab mr checkout origin 10
 		lab mr checkout upstream -b a_branch_name
+		lab mr checkout upstream -r a_remote_name
 		lab mr checkout a_remote -f
 		lab mr checkout upstream --https
 		lab mr checkout upstream -t`),
@@ -81,13 +83,17 @@ var checkoutCmd = &cobra.Command{
 			}
 
 			remoteName := ""
-			for _, remote := range remotes {
-				path, err := git.PathWithNamespace(remote)
-				if err != nil {
-					continue
-				}
-				if path == project.PathWithNamespace {
-					remoteName = remote
+			if mrCheckoutCfg.remote != "" {
+				remoteName = mrCheckoutCfg.remote
+			} else {
+				for _, remote := range remotes {
+					path, err := git.PathWithNamespace(remote)
+					if err != nil {
+						continue
+					}
+					if path == project.PathWithNamespace {
+						remoteName = remote
+					}
 				}
 			}
 
@@ -137,7 +143,8 @@ var checkoutCmd = &cobra.Command{
 
 func init() {
 	checkoutCmd.Flags().StringVarP(&mrCheckoutCfg.branch, "branch", "b", "", "checkout merge request with <branch> name")
-	checkoutCmd.Flags().BoolVarP(&mrCheckoutCfg.track, "track", "t", false, "set checked out branch to track mr author remote branch, adds remote if needed")
+	checkoutCmd.Flags().StringVarP(&mrCheckoutCfg.remote, "remote", "r", "", "if tracking, force <remote> name")
+	checkoutCmd.Flags().BoolVarP(&mrCheckoutCfg.track, "track", "t", false, "set to track remote branch, adds remote if needed")
 	// useHTTP is defined in "project_create.go"
 	checkoutCmd.Flags().BoolVar(&useHTTP, "http", false, "checkout using HTTP protocol instead of SSH")
 	checkoutCmd.Flags().BoolVarP(&mrCheckoutCfg.force, "force", "f", false, "force branch checkout and override existing branch")
