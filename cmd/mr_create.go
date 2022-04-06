@@ -32,9 +32,8 @@ var mrCreateCmd = &cobra.Command{
 		lab mr create a_remote -a johndoe -a janedoe
 		lab mr create my_remote -c
 		lab mr create my_remote --draft
-		lab mr create my_remote -F a_file.txt
+		lab mr create my_remote -F a_file.txt --no-edit
 		lab mr create my_remote -F a_file.txt --force-linebreak
-		lab mr create my_remote -f a_file.txt
 		lab mr create my_remote -l bug -l confirmed
 		lab mr create my_remote -m "A title message"
 		lab mr create my_remote -m "A MR title" -m "A MR description"
@@ -57,7 +56,8 @@ func init() {
 	mrCreateCmd.Flags().String("milestone", "", "set milestone by milestone title or ID")
 	mrCreateCmd.Flags().StringP("file", "F", "", "use the given file as the Title and Description")
 	mrCreateCmd.Flags().StringP("file-edit", "f", "", "use the given file as the Title and Description and open the editor")
-	mrCreateCmd.Flags().Bool("no-edit", false, "use the selected commit message without opening the editor")
+	mrCreateCmd.Flags().MarkDeprecated("file-edit", "this option behavior is now the default behavior dor -F, also check the --no-edit options")
+	mrCreateCmd.Flags().Bool("no-edit", false, "use the selected item without opening the editor")
 	mrCreateCmd.Flags().Bool("force-linebreak", false, "append 2 spaces to the end of each line to force markdown linebreaks")
 	mrCreateCmd.Flags().BoolP("cover-letter", "c", false, "comment changelog and diffstat")
 	mrCreateCmd.Flags().Bool("draft", false, "mark the merge request as draft")
@@ -240,13 +240,11 @@ func runMRCreate(cmd *cobra.Command, args []string) {
 	}
 
 	var title, body string
+	openEditor := !noEdit
 
 	if filename != "" {
-		var openEditor bool
-
 		if ofilename != "" {
 			filename = ofilename
-			openEditor = true
 		}
 
 		if _, err := os.Stat(filename); os.IsNotExist(err) {
@@ -289,7 +287,6 @@ func runMRCreate(cmd *cobra.Command, args []string) {
 			log.Fatal(err)
 		}
 
-		openEditor := !noEdit
 		if openEditor {
 			title, body, err = git.Edit("MERGEREQ", msg)
 			if err != nil {
