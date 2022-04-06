@@ -62,6 +62,12 @@ func noteRunFn(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
+	noEdit, err := cmd.Flags().GetBool("no-edit")
+	if err != nil {
+		log.Fatal(err)
+	}
+	openEditor := !noEdit
+
 	linebreak, err := cmd.Flags().GetBool("force-linebreak")
 	if err != nil {
 		log.Fatal(err)

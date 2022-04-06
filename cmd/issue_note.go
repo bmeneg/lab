@@ -24,6 +24,7 @@ var issueNoteCmd = &cobra.Command{
 func init() {
 	issueNoteCmd.Flags().StringArrayP("message", "m", []string{}, "use the given <msg>; multiple -m are concatenated as separate paragraphs")
 	issueNoteCmd.Flags().StringP("file", "F", "", "use the given file as the message")
+	issueNoteCmd.Flags().Bool("no-edit", false, "use the selected item without opening the editor")
 	issueNoteCmd.Flags().Bool("force-linebreak", false, "append 2 spaces to the end of each line to force markdown linebreaks")
 	issueNoteCmd.Flags().Bool("quote", false, "quote note in reply")
 	issueNoteCmd.Flags().Bool("resolve", false, "[unused in issue note command]")
